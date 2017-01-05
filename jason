@@ -1,0 +1,82 @@
+public class JacksonConvertHelper {
+
+    private static ObjectMapper mapper;
+
+    /**
+     * 通过JSON字符串以及class转换成java模型对象
+     *
+     * @param <T>
+     * @param jsonString
+     * @param clazz
+     * @return
+     * @throws Exception
+     */
+    public static <T> T getJavaBeanByString(final String jsonString, final Class<T> clazz)
+            throws CKDException {
+        T obj = null;
+        try {
+            obj = getMapperInstance().readValue(jsonString, clazz);
+            return obj;
+        } catch (JsonParseException e1) {
+            throw new CKDException(Status.INTERNAL_SERVER_ERROR, ExceptionUtils.getExceptionMessage(e1));
+        } catch (JsonMappingException e1) {
+            throw new CKDException(Status.INTERNAL_SERVER_ERROR, ExceptionUtils.getExceptionMessage(e1));
+        } catch (IOException e1) {
+            throw new CKDException(Status.INTERNAL_SERVER_ERROR, ExceptionUtils.getExceptionMessage(e1));
+        }
+    }
+
+    /**
+     * 通过java bean对象转换成JSON字符串
+     *
+     * @param value
+     * @return
+     */
+    public static String getStringByJavaBean(Object value) throws CKDException {
+        try {
+            return getMapperInstance().writeValueAsString(value);
+        } catch (JsonParseException e1) {
+            throw new CKDException(Status.INTERNAL_SERVER_ERROR, ExceptionUtils.getExceptionMessage(e1));
+        } catch (JsonMappingException e1) {
+            throw new CKDException(Status.INTERNAL_SERVER_ERROR, ExceptionUtils.getExceptionMessage(e1));
+        } catch (IOException e1) {
+            throw new CKDException(Status.INTERNAL_SERVER_ERROR, ExceptionUtils.getExceptionMessage(e1));
+        }
+    }
+
+    public static <T, K> T getCollectionJavaBeanByString(String jsonString, Class<K> collectionClazz, Class<T> clazz)
+            throws CKDException {
+        T obj = null;
+        try {
+            JavaType javaType = getMapperInstance().getTypeFactory().constructParametricType(collectionClazz, clazz);
+            obj = getMapperInstance().readValue(jsonString, javaType);
+            return obj;
+        } catch (JsonParseException e1) {
+            throw new CKDException(Status.INTERNAL_SERVER_ERROR, ExceptionUtils.getExceptionMessage(e1));
+        } catch (JsonMappingException e1) {
+            throw new CKDException(Status.INTERNAL_SERVER_ERROR, ExceptionUtils.getExceptionMessage(e1));
+        } catch (IOException e1) {
+            throw new CKDException(Status.INTERNAL_SERVER_ERROR, ExceptionUtils.getExceptionMessage(e1));
+        }
+    }
+
+    /**
+     * 初始化ObjectMapper
+     *
+     * @return
+     */
+    private static synchronized ObjectMapper getMapperInstance() {
+        if (mapper == null) {
+            mapper = new ObjectMapper();
+            mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+            mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+            // 通过该方法对mapper对象进行设置，所有序列化的对象都将按改规则进行系列化
+            mapper.setSerializationInclusion(Include.NON_NULL);
+        }
+
+        return mapper;
+    }
+
+}
+
+putInfo = JacksonConvertHelper.getJavaBeanByString(putInfoString, PutInfo.class);
