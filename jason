@@ -1,3 +1,6 @@
+String json = "{\"key01\":\"" + value01 + "\",\"key02\":" + value02+ "}";
+// 打印结果为 {"key01":"value01","key02":123}
+
 public class JacksonConvertHelper {
 
     private static ObjectMapper mapper;
