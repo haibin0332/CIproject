@@ -1,0 +1,106 @@
+public class TaskResult extends ServiceResult {
+    /**
+     * 任务ID
+     */
+    private String taskID;
+
+    public TaskResult() {
+        super();
+    }
+
+    public TaskResult(Status status, String taskID) {
+        super(status);
+        this.taskID = taskID;
+    }
+
+    /**
+     * 获得任务ID
+     *
+     * @return 任务ID
+     */
+    public String getTaskID() {
+        return taskID;
+    }
+
+    /**
+     * 设置任务ID
+     *
+     * @param taskID 任务ID
+     */
+    public void setTaskID(String taskID) {
+        this.taskID = taskID;
+    }
+
+    public String toString() {
+        return "{\"status\":\""+getStatus().name()+"\",\"taskID\":\""+taskID+"\"}";
+    }
+
+}
+
+1. super关键字表示超（父）类的意思。this变量代表对象本身。
+2. super访问父类被子类隐藏的变量或覆盖的方法。当前类如果是从超类继承而来的，当调用super.XX()就是调用基类版本的XX（）方法。其中超类是最近的父类。
+3.调用super() 父类构造函数的时候只能调用在子类构造函数的第一行
+4.this只能在类中的非静态方法中使用，静态方法和静态的代码块中绝对不能出现this。并且this只和特定的对象关联，而不和类关联，同一个类的不同对象有不同的this
+
+例如：
+    class Person {  
+        protected void print() {  
+           System.out.println("The print() in class Person.");  
+        }  
+    }         
+    public class DemoSuper extends Person {        
+        public DemoSuper(){        
+           super(); //调用父类的构造方法，而且放第一行，如果不写，系统自动加  
+        }  
+        public void print() {  
+           System.out.println("The print() in class DemoSuper.");  
+           super.print();// 调用父类的方法  
+        }         
+        public static void main(String[] args) {  
+           DemoSuper ds = new DemoSuper();  
+           ds.print();  
+        }  
+    }
+    
+    
+   public class TaskInfo extends TaskResult {
+
+    public String getModel() {
+        return model;
+    }
+
+    public void setModel(String model) {
+        this.model = model;
+    }
+
+    /**
+     * 任务ID
+     */
+    private String model;
+
+    public String getPresult() {
+        return presult;
+    }
+
+    public void setPresult(String presult) {
+        this.presult = presult;
+    }
+
+    private String presult;
+
+    public TaskInfo() {
+        super();
+    }
+
+    public TaskInfo(String model, String presult, Status status, String taskID) {
+        super(status, taskID);
+        this.model = model;
+        this.presult = presult;
+    }
+
+    public String toString() {
+        return "{\"status\":\"" + getStatus().name() + "\",\"taskID\":\"" + getTaskID()
+                + "\",\"model\":\"" + model + "\",\"presult\":\"" + presult + "\"}";
+    }
+    
+} 
