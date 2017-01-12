@@ -1,0 +1,70 @@
+    private static String IP = "127.0.0.1";
+    private static String PORT = "8080";
+    private static String address = "hacluster";
+    private static String URL = "/restful/v1";
+    
+    public static void main(String[] args) {
+        //远程测试服务调用
+        remoteServiceInvokeTest();
+    }
+
+    private static void remoteQueryTaskStatusTest() {
+        String taskId = "task1478078331257";
+        String contentType = "application/json";
+        String acceptType = "application/json";
+
+        String result1 = HttpClientOperation.getMethod("http://" + IP+":"+PORT + URL +
+                "/QueryTaskStatusService/QueryTaskStatus/" + taskId, "application/json");
+        System.out.println(result1);
+    }
+    
+
+import javax.ws.rs.*;
+
+@Path("/QueryTaskStatusService")
+@Produces({"application/json", "application/xml"})
+@Consumes({"application/json", "application/xml"})
+public interface QueryTaskStatusService {
+    @GET
+    @Path("/QueryTaskStatus/{TaskId}")
+    public TaskResult processQueryTaskStatus(@PathParam("TaskId") String taskId);
+}
+
+
+import commons.SystemParam;
+import commons.results.ServiceResult;
+import commons.results.TaskResult;
+import utils.dataAccess.DataAccess;
+import dataAccess.KVAccess.KVAccess;
+import org.apache.log4j.Logger;
+
+import javax.ws.rs.core.Response.Status;
+
+public class QueryTaskStatusServiceImpl implements QueryTaskStatusService {
+    private static final Logger logger = Logger.getLogger(QueryTaskStatusServiceImpl.class);
+
+    /**
+     * 查询任务状态
+     *
+     * @param taskId 任务id
+     * @return 任务状态
+     */
+    public TaskResult processQueryTaskStatus(String taskId) {
+        TaskResult result;
+        String statusSuffix = SystemParam.getParamByKeyWithDefault("statusSuffix", ":status");
+        String taskKey = taskId.concat(statusSuffix);
+        KVAccess access = DataAccess.getKVAccess();
+        String status = (String) access.get(taskKey);
+        if (null != status) {
+            //查询到该task id
+            result = new TaskResult(Status.valueOf(status), taskId);
+        } else {
+            //该task id不存在或没有状态
+            result = new TaskResult(Status.NO_CONTENT, taskId);
+        }
+        return result;
+
+    }
+}
+
+    
