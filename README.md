@@ -10,4 +10,5 @@ redis 127.0.0.1:6379> get task1484547863445:status
 redis 127.0.0.1:6379> get task1484547855321:status
 "OK"
 
-
+linux shell
+http://www.cnblogs.com/linn/archive/2007/03/05/664739.html
