@@ -1,0 +1,203 @@
+Zookeeper安装：
+
+1.       在系统中添加zookeeper用户，便于管理（建议，非强制）
+
+useradd -s /bin/bash -m zookeeper
+
+passwd zookeeper
+
+2.       解压zookeeper安装包
+
+tar –xzf zookeeper-<version>.tar.gz）
+
+3.    启动zookeeper
+
+       在bin目录下执行./zkServer.sh start &
+
+       如果不能后台运行，则执行 nohup ./zkServer.sh start &
+
+4.    配置zookeeper需要管理的组件相应的文件夹
+
+bin目录下执行./zkCli.sh
+
+       create /kafka/ ‘’
+
+       create /hbase/ ‘’
+
+create /storm ‘’
+
+       等等
+
+ 
+
+Kafka安装
+
+1.       在系统中添加kafka用户
+
+       useradd -s /bin/bash -m kafka
+
+passwd kafka
+
+2.       解压kafka安装包（命令是tar –xzf kafka-<version>.tar.gz）
+
+3.       修改配置文件kafka/config/server.properties
+
+zookeeper.connect=<ip>:<port>/kafka
+
+<ip>:<port>为实际的zookeeper的ip和port，如果是涉及到机群，则各个<ip>:<port>/kafka之间用逗号隔开
+
+其它配置可酌情修改
+
+4.       启动kafka
+
+       在bin目录下执行./kafka-server-start.sh ../config/server.properties &
+
+       如果仍然无法后台运行kafka，则执行
+
+nohup ./kafka-server-start.sh ../config/server.properties &
+
+ 
+
+Storm安装：
+
+1.       在系统中添加storm用户，便于管理（建议，非强制）
+
+2.       解压storm安装包
+
+3.    修改conf文件夹下storm.yaml文件
+
+storm.zookeeper.servers:
+
+     - "<ip1>"
+
+- "<ip2>"
+
+- "<ip3>"         // zookeeper所在集群ip，引号不能删
+
+      nimbus.host: "<ip>"   // storm主机ip
+
+其它配置可酌情修改
+
+4.    启动storm
+
+       在bin目录下一次执行
+
+a)       ./storm nimbus &             // 启动nimbus
+
+b)       ./storm supervisor &                        //启动supervisor
+
+c)       /home/storm095/apache-storm-0.9.5/bin/storm jar /home/storm095/apache-storm-0.9.5/Topology-1.0.0-SNAPSHOT.jar  org.shirdrn.storm.examples.VedionTopology 10.136.93.146 &
+
+注意修改c)中的绝对路径，此外，Topology-1.0.0-SNAPSHOT.jar是storm进行实时数据处理的相关代码生成的jar包；org.shirdrn.storm.examples.VedionTopology是该jar包功能的主类；
+
+10.136.93.146   改成是storm的主机ip
+
+ 
+
+Redis安装
+
+1.       在系统中添加redis用户，便于管理（建议，非强制）
+
+2.       解压redis安装包
+
+3.       在redis根目录，执行make命令
+
+3.    启动redis
+
+       进入/src文件夹，执行./redis-server & 
+
+4.    进入redis shell
+
+       执行./redis-cli
+
+ 
+
+hbase安装
+
+1.       新建hbase用户；
+
+2.       确认系统JDK版本1.6以上；
+
+3.       从官方网站 http://hbase.apache.org 下载HBase安装包；
+
+4.       解压缩后修改hbase/conf/下的hbase-site.xml配置文件：
+
+1) 如果采用单机模式，则hbase-site.xml文件修改为：
+
+<configuration>
+
+<property>
+
+<name>hbase.rootdir</name>
+
+<value>file:///home/hbase/data</value>
+
+// 注：该路径根据HBase安装路径修改，data文件夹需提前mkdir
+
+</property>
+
+</configuration>
+
+2)       如果采用基于hadoop的分布式模式，则hbase-site.xml文件中添加：
+
+<configuration>
+
+<property>
+
+<name>hbase.rootdir</name>
+
+<value>hdfs://10.136.93.182:9000/hbase</value>   
+
+// 注：该路径根据hadoop主机ip修改
+
+</property>
+
+</configuration>
+
+3)       如果系统中已经安装了ZooKeeper，则hbase-site.xml中添加：
+
+<configuration>
+
+<property>
+
+<name>hbase.cluster.distributed</name>
+
+<value>true</value>
+
+</property>
+
+<property>
+
+<name>hbase.zookeeper.property.clientPort</name>
+
+<value>2181</value>             
+
+// 注：该端口固定，不用修改
+
+</property>
+
+<property>
+
+<name>hbase.zookeeper.quorum</name>
+
+<value>10.136.93.184</value>      
+
+// 注：系统IP
+
+</property>
+
+<property>
+
+<name>hbase.zookeeper.property.dataDir</name>
+
+<value>/home/zookeeper/zookeeper-3.4.6/data/</value> 
+
+// 注：该路径根据zookeeper安装路径修改
+
+</property>
+
+</configuration>
+
+5.在修改完hbase-site.xml文件后，进入hbase/bin目录下，执行 ./start-hbase.sh 命令，启动HBase
+
+6.执行./hbase shell连接HBase；
