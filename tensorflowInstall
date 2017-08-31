@@ -1,0 +1,233 @@
+TensorFlow安装指南 v0.6
+1. 简介
+TensorFlow从2015年11月9日发布0.5.0版至今已经到了正式支持分布式的0.8.0 版。除
+了从0.5.0版开始就分成2个版本分别支持CPU和GPU外，0.6.0版又提供了对Python 3的
+支持。我们可以看下截至今天(2016年5月12日)的版本情况：
+TensorFlow 0.5.0
+TensorFlow 0.5.0 for CPU & Python 2.7
+TensorFlow 0.5.0 for GPU & Python 2.7
+TensorFlow 0.6.0
+TensorFlow 0.6.0 for CPU & Python 2.7
+TensorFlow 0.6.0 for CPU & Python 3.4
+TensorFlow 0.6.0 for GPU & Python 2.7
+TensorFlow 0.6.0 for GPU & Python 3.4
+TensorFlow 0.7.0
+TensorFlow 0.7.0 for CPU & Python 2.7
+TensorFlow 0.7.0 for CPU & Python 3.4
+TensorFlow 0.7.0 for GPU & Python 2.7
+TensorFlow 0.7.0 for GPU & Python 3.4
+TensorFlow 0.7.1
+TensorFlow 0.7.1 for CPU & Python 2.7
+TensorFlow 0.7.1 for CPU & Python 3.4
+TensorFlow 0.7.1 for GPU & Python 2.7
+TensorFlow 0.7.1 for GPU & Python 3.4
+TensorFlow 0.8.0
+TensorFlow 0.8.0 for CPU & Python 2.7
+TensorFlow 0.8.0 for CPU & Python 3.4
+TensorFlow 0.8.0 for GPU & Python 2.7
+TensorFlow 0.8.0 for GPU & Python 3.4
+如何在同一台服务器上安装和使用这么多不同版本的TensorFlow？尤其是当TF新版本发
+布之后，在正式切换到新版本前，如何同时保持新旧几套开发环境又互不冲突？
+我们的解决方案是借助Anaconda提供的Python虚拟环境，将不同版本的TensorFlow安
+装到不同的Python虚拟环境中去。这样不仅可以方便个人搭建和管理自己所需的多个版
+本的TensorFlow开发环境，同一台服务器上的不同用户之间的多个TensorFlow环境也不
+会相互影响。
+下面我们分别讲述如何安装CPU版和GPU版的TensorFlow。如果是在公司内网通过代理
+服务器连接Internet安装，可能会遇到许多问题。为了不让各种代理导致的问题干扰了主
+要的安装步骤，我们专门在文末列出了一系列的“常见问题”及其解决办法。如果你的问
+题没有列在其中，那么欢迎给我发邮件询问: t.cai@huawei.com，或者直接在这篇博文
+下提问。我们可以一起想法解决。
+在公司的内网环境下，需要用自己的账号设置代理，否则会报各种无法连接下载所需安
+装文件的错误：
+export http_proxy=“http://<域帐号>:<域密码>@proxy.huawei.com:8080”
+export https_proxy=“http://<域帐号>:<域密码>@proxy.huawei.com:8080”
+2. 安装TensorFlow
+2.1 安装Anaconda
+Anaconda可以从其官方网站下载：https://www.continuum.io/downloads#_unix 或者直
+接从我们的服务器上下载：
+绿区：http://10.194.153.92/downloads/Anaconda2-2.5.0-Linux-x86_64.zip
+黄区：http://10.71.158.46/downloads/Anaconda2-2.5.0-Linux-x86_64.zip
+我们一般都是在64位Linux服务器下使用TensorFlow，建议选择Anaconda Linux 64-BIT
+for Python 2.7版本，Python 3.5版也能安装，不过可能会遇到更多的问题。而且实际上
+Anaconda Linux 64-BIT for Python 2.7版本也可以安装Python 3的虚拟环境，后面会
+讲。
+下载之后，直接在服务器上以命令行方式执行如下命令然后按提示安装即可：
+sh Anaconda2-2.5.0-Linux-x86_64.sh
+我们先后在CentOS 6.5, 7.0和Ubuntu 14.04上都安装过Anaconda，使用正常，没有问
+题。
+2.2 安装CPU版的TensorFlow
+如果服务器上没有GPU，那么可以使用CPU版的TensorFlow，安装起来也比较简单。
+安装完Anaconda之后，可以先分别创建Python 2.7和Python 3.4的虚拟环境，方便后续
+安装其它基于不同Python的TF版本。
+conda create -n py27 python=2.7
+conda create -n py34 python=3.4
+安装TensorFlow 0.8.0 for CPU & Python 2.7
+conda create -n tf-0.8.0-cpu-py27 --clone py27
+source activate tf-0.8.0-cpu-py27
+pip install --upgrade https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.8.0-cp27-nonelinux_
+x86_64.whl
+#pip install --upgrade --index-url=http://pypi.python.org/simple/ --trusted-host pypi.python.org tensorflow-0.8.0-
+cp27-none-linux_x86_64.whl
+安装TensorFlow 0.8.0 for CPU & Python 3.4
+conda create -n tf-0.8.0-cpu-py34 --clone py34
+source activate tf-0.8.0-cpu-py34
+pip install --upgrade https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.8.0-cp34-nonelinux_
+x86_64.whl
+如果在上述pip install过程中无法下载tensorflow-0.8.0-*.whl文件，报错：ProxyError，
+则可以直接通过浏览器下载所需的.whl文件，然后本地安装。也可以直接到如下地址下
+载我们已经打包好的文件：
+pip install --upgrade --index-url=http://pypi.python.org/simple/ --trusted-host pypi.python.org tensorflow-0.8.0-
+cp27-none-linux_x86_64.whl
+pip install --upgrade --index-url=http://pypi.python.org/simple/ --trusted-host pypi.python.org tensorflow-0.8.0-
+cp34-none-linux_x86_64.whl
+2.2.3 测试CPU版的TensorFlow
+测试tf-0.8.0-cpu-py27虚拟环境下tensorflow是否安装成功：
+$ source activate tf-0.8.0-cpu-py27
+$ python
+.....
+>>> import tensorflow
+>>>
+^Z
+$ source deactivate
+测试tf-0.8.0-cpu-py34虚拟环境下tensorflow是否安装成功：
+$ source activate tf-0.8.0-cpu-py34
+$ python
+.....
+>>> import tensorflow
+>>>
+^Z
+$ source deactivate
+2.3 安装GPU版的TensorFlow
+2.3.1 安装CUDA SDK
+下载CUDA 7.5: https://developer.nvidia.com/cuda-downloads，选择所需的安装
+版本，比如我们选用的是Linux->x86_64->CentOS->7->runfile(local)-
+>cuda_7.5.18_linux.run
+不同的操作系统上安装CUDA SDK稍有不同，可以参考NVIDIA CUDA Getting
+Started Guide for Linux安装，其中有如下一些关键步骤：
+创建/etc/modprobe.d/blacklist-nouveau.conf（这是CentOS 7上的路
+径，Ubuntu上可能稍有不同），并写入如下内容:
+blacklist nouveau
+options nouveau modeset=0
+重新生成kernel initramfs:
+$ sudo dracut --force
+重启服务器，进入命令行模式，然后执行如下命令，并按提示确认即可：
+./cuda_7.5.18_linux.run --no-opengl-libs
+安装成功后显示：
+Driver: Installed
+Toolkit: Installed in /usr/local/cuda-7.5
+Samples: Installed in /usr/local/cuda-7.5, but missing recommended libraries
+Please make sure that
+- PATH includes /usr/local/cuda-7.5/bin
+- LD_LIBRARY_PATH includes /usr/local/cuda-7.5/lib64, or, add /usr/local/cuda-7.5/lib64 to /etc/ld.so.conf and
+- LD_LIBRARY_PATH includes /usr/local/cuda-7.5/lib64, or, add /usr/local/cuda-7.5/lib64 to /etc/ld.so.conf and
+run ldconfig as root
+To uninstall the CUDA Toolkit, run the uninstall script in /usr/local/cuda-7.5/bin
+To uninstall the NVIDIA Driver, run nvidia-uninstall
+Please see CUDA_Installation_Guide_Linux.pdf in /usr/local/cuda-7.5/doc/pdf for detailed information on setting up
+CUDA.
+Logfile is /tmp/cuda_install_15610.log
+将如下内容加入~/.bashrc，并执行source ~/.bashrc使其生效：
+export CUDA_HOME="/usr/local/cuda−7.5/lib64"
+export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/local/cuda−7.5/lib64"
+export PATH="$CUDA_HOME/bin:$PATH"
+2.3.2 安装cuDNN
+到NVIDIA官方下载cuDNN，不过需要先注册一个开发者账号才能下载，如果不想
+注册，可以直接从我们在“常见问题”中提供的地址下载：
+下载之后，执行如下命令即可安装：
+tar xvzf cudnn-7.0-linux-x64-v4.0-prod.tgz
+sudo cp cuda/include/cudnn.h /usr/local/cuda/include/
+sudo cp cuda/lib64/libcudnn* /usr/local/cuda/lib64/
+2.3.3 安装TensorFlow 0.8.0 for GPU
+安装TensorFlow 0.8.0 for GPU & Python 2.7
+conda create -n tf-0.8.0-gpu-py27 --clone py27
+source activate tf-0.8.0-gpu-py27
+pip install --upgrade https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.8.0-cp27-nonelinux_
+x86_64.whl
+#pip install --upgrade tensorflow-0.8.0-cp27-none-linux_x86_64.whl
+安装TensorFlow 0.8.0 for GPU & Python 3.4 conda create -n tf-0.8.0-gpupy34
+--clone py34 source activate tf-0.8.0-gpu-py34 pip install --
+upgrade
+https://storage.googleapis.com/tensorflow/linux/cpu/tensorflow-0.8.0-
+cp34cm-none-linux_x86_64.whl #pip install --upgrade --indexurl=
+http://pypi.python.org/simple/ --trusted-host pypi.python.org
+2.3.4 测试GPU版的TensorFlow
+测试tf-0.8.0-gpu-py27虚拟环境下tensorflow是否安装成功：
+$ source activate tf-0.8.0-gpu-py27
+$ python
+.....
+>>> import tensorflow
+I tensorflow/stream_executor/dso_loader.cc:105] successfully opened CUDA library libcublas.so locally
+I tensorflow/stream_executor/dso_loader.cc:105] successfully opened CUDA library libcudnn.so locally
+I tensorflow/stream_executor/dso_loader.cc:105] successfully opened CUDA library libcuda.so locally
+I tensorflow/stream_executor/dso_loader.cc:105] successfully opened CUDA library libcurand.so locally
+>>>
+^Z
+$ source deactivate
+测试tf-0.8.0-gpu-py34虚拟环境下tensorflow是否安装成功：
+$ source activate tf-0.8.0-gpu-py34
+$ python
+.....
+>>> import tensorflow
+I tensorflow/stream_executor/dso_loader.cc:105] successfully opened CUDA library libcublas.so locally
+I tensorflow/stream_executor/dso_loader.cc:105] successfully opened CUDA library libcudnn.so locally
+I tensorflow/stream_executor/dso_loader.cc:105] successfully opened CUDA library libcuda.so locally
+I tensorflow/stream_executor/dso_loader.cc:105] successfully opened CUDA library libcurand.so locally
+>>>
+^Z
+$ source deactivate
+3. 常见问题
+3.1 公司内网哪里可以下载到上述所需的安装文件？
+Anaconda:
+- 绿区：http://10.194.153.92/downloads/Anaconda2-2.5.0-Linux-x86_64.zip
+- 黄区：http://10.71.158.46/downloads/Anaconda2-2.5.0-Linux-x86_64.zip
+TensorFlow CPU版:
+TensorFlow CPU版:
+- 绿区：http://10.194.153.92/downloads/tf-cpu.zip
+- 黄区：http://10.71.158.46/downloads/tf-cpu.zip
+TensorFlow GPU版：
+- 绿区：http://10.194.153.92/downloads/tf-gpu.zip
+- 黄区：http://10.71.158.46/downloads/tf-gpu.zip
+cuDNN：
+- 绿区：http://10.194.153.92/downloads/cudnn_v4.zip
+- 黄区：http://10.71.158.46/downloads/cudnn_v4.zip
+3.2 找不到conda命令
+在~/.bashrc中加入如下内容，然后source ~/.bashrc
+export PATH=/home/<username>/anaconda2/bin:$PATH
+3.3 SSL报错：Error: Connection error: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify
+failed (_ssl.c:590)
+创建~/anaconda/.condarc文件，并加入如下内容：
+ssl_verify: False
+3.4 pip install的时候报错ssl.c连接错误: pip install fails with “connection error: [SSL:
+CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:598)”
+解决方法：
+pip install --index-url=http://pypi.python.org/simple/ --trusted-host pypi.python.org six
+pip install --index-url=http://pypi.python.org/simple/ --trusted-host pypi.python.org /home/tensorflowgpu/
+tensorflow-0.7.1-py27.whl
+3.5 报错：Cannot remove entries from nonexistent file /home/caitao/anaconda/envs/tf-0.8.0-cpupy27/
+lib/python2.7/site-packages/easy-install.pth
+解决方法：生成该空文件
+touch /home/caitao/anaconda/envs/tf-0.8.0-cpu-py27/lib/python2.7/site-packages/easy-install.pth
+3.6 报错：IOError: [Errno 2] No such file or directory: ‘/home/caitao/anaconda/envs/tf-0.8.0-cpupy27/
+bin/easy_install-2.7’
+解决方法：
+pip install --upgrade setuptools
+3.7 报错：Bad md5 hash for …/numpy
+解决方法：
+conda install -n tf-0.8.0-cpu-py27 numpy
+3.8 以no-opengl-libs方式安装cuda_xxx.run，如果报错：“The driver installation is unable to locate the
+kernel source.”，则需要先安装kernel-devel
+sudo yum install kernel-devel kernel-headers
+然后找到kernels的路径，比如：/usr/src/kernels/3.10.0-229.20.1.el7.x86_64，再执
+行：
+./cuda_7.5.18_linux.run --no-opengl-libs --kernel-source-path='/usr/src/kernels/3.10.0-229.20.1.el7.x86_64'
+3.9 OSError: [Errno 2] No such file or directory: '/home/caitao/anaconda2/envs/tf-0.7.1-gpupy27/
+lib/python2.7/site-packages/setuptools-19.6.2-py2.7.egg'
+$ touch /home/caitao/anaconda2/envs/tf-0.7.1-gpu-py27/lib/python2.7/site-packages/setuptools-19.6.2-py2.7.egg
+$ pip install --upgrade setuptools --index-url=http://pypi.python.org/simple --trusted-host pypi.python.org
+3.10 You are using pip version 8.0.2, however version 8.1.1 is available.
+$ pip install --upgrade pip --index-url=http://pypi.python.org/simple --trusted-host pypi.python.org
+3.11 在Ubuntu上运行sh Anaconda-2.5.0-Linux-x86_64.sh安装Anaconda报错：
+Anaconda-2.5.0-Linux-x86_64.sh: 15: Anaconda-2.1.0-Linux-x86_64.sh: 0: not found
+Anaconda-2.5.0-Linux-x86_64.sh: 65: Anaconda-2.1.0-Linux-x86_64.sh: Syntax error: word unexpected (expecting ")")
+解决方法：
+bash Anaconda-2.5.0-Linux-x86_64.sh
