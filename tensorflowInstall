@@ -1,46 +1,4 @@
-TensorFlow安装指南 v0.6
-1. 简介
-TensorFlow从2015年11月9日发布0.5.0版至今已经到了正式支持分布式的0.8.0 版。除
-了从0.5.0版开始就分成2个版本分别支持CPU和GPU外，0.6.0版又提供了对Python 3的
-支持。我们可以看下截至今天(2016年5月12日)的版本情况：
-TensorFlow 0.5.0
-TensorFlow 0.5.0 for CPU & Python 2.7
-TensorFlow 0.5.0 for GPU & Python 2.7
-TensorFlow 0.6.0
-TensorFlow 0.6.0 for CPU & Python 2.7
-TensorFlow 0.6.0 for CPU & Python 3.4
-TensorFlow 0.6.0 for GPU & Python 2.7
-TensorFlow 0.6.0 for GPU & Python 3.4
-TensorFlow 0.7.0
-TensorFlow 0.7.0 for CPU & Python 2.7
-TensorFlow 0.7.0 for CPU & Python 3.4
-TensorFlow 0.7.0 for GPU & Python 2.7
-TensorFlow 0.7.0 for GPU & Python 3.4
-TensorFlow 0.7.1
-TensorFlow 0.7.1 for CPU & Python 2.7
-TensorFlow 0.7.1 for CPU & Python 3.4
-TensorFlow 0.7.1 for GPU & Python 2.7
-TensorFlow 0.7.1 for GPU & Python 3.4
-TensorFlow 0.8.0
-TensorFlow 0.8.0 for CPU & Python 2.7
-TensorFlow 0.8.0 for CPU & Python 3.4
-TensorFlow 0.8.0 for GPU & Python 2.7
-TensorFlow 0.8.0 for GPU & Python 3.4
-如何在同一台服务器上安装和使用这么多不同版本的TensorFlow？尤其是当TF新版本发
-布之后，在正式切换到新版本前，如何同时保持新旧几套开发环境又互不冲突？
-我们的解决方案是借助Anaconda提供的Python虚拟环境，将不同版本的TensorFlow安
-装到不同的Python虚拟环境中去。这样不仅可以方便个人搭建和管理自己所需的多个版
-本的TensorFlow开发环境，同一台服务器上的不同用户之间的多个TensorFlow环境也不
-会相互影响。
-下面我们分别讲述如何安装CPU版和GPU版的TensorFlow。如果是在公司内网通过代理
-服务器连接Internet安装，可能会遇到许多问题。为了不让各种代理导致的问题干扰了主
-要的安装步骤，我们专门在文末列出了一系列的“常见问题”及其解决办法。如果你的问
-题没有列在其中，那么欢迎给我发邮件询问: t.cai@huawei.com，或者直接在这篇博文
-下提问。我们可以一起想法解决。
-在公司的内网环境下，需要用自己的账号设置代理，否则会报各种无法连接下载所需安
-装文件的错误：
-export http_proxy=“http://<域帐号>:<域密码>@proxy.huawei.com:8080”
-export https_proxy=“http://<域帐号>:<域密码>@proxy.huawei.com:8080”
+TensorFlow安装指南
 2. 安装TensorFlow
 2.1 安装Anaconda
 Anaconda可以从其官方网站下载：https://www.continuum.io/downloads#_unix 或者直
