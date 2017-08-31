@@ -12,3 +12,7 @@ redis 127.0.0.1:6379> get task1484547855321:status
 
 linux shell
 http://www.cnblogs.com/linn/archive/2007/03/05/664739.html
+
+
+anaconda install
+http://www.jianshu.com/p/2f3be7781451
