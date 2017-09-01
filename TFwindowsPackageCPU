@@ -1,0 +1,10 @@
+bleach-1.5.0
+html5lib-0.9999999
+jep-3.7.0
+Markdown-2.6.9
+protobuf-3.4.0
+anaconda3环境，注意去掉其他python版本冲突
+C:\Program Files\Anaconda3;C:\Program Files\Anaconda3\Scripts;C:\Program Files\Anaconda3\Library\bin
+tensorflow_tensorboard-0.1.5-py3-none-any.whl
+tensorflow-1.3.0-cp35-cp35m-win_amd64.whl
+webencodings-0.5.1-py2.py3-none-any.whl
