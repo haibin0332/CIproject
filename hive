@@ -1,0 +1,571 @@
+#可以通过spark-shell 复制粘贴代码 main() 里面的代码直接操作 hdfs 里面的数据文件
+
+进入spark shell 里面 利用 Spark/spark/bin # ./spark-shell  初始化 spark context
+
+还可以通过把hdfs文件导入到hive表中 对hive 表中的数据进行操作
+
+beeline 登入
+
+create table tbl_userRating
+(
+userid string,
+itemid string,
+sore float,
+stmp string
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' 
+LINES TERMINATED BY '\n';
+
+load data local inpath '/home/hadoop/work/chengmeng/rating_new.csv' overwrite into table tbl_userRating;
+
+
+-- CREATE table pcp
+-- (province string,city string,people int)
+-- ROW FORMAT DELIMITED FIELDS TERMINATED BY '|'
+-- STORED AS TEXTFILE;
+
+-- load data local inpath '/home/hadoop/ly/incre_cf/test.txt'overwrite into table pcp;
+
+-- select province,city,
+-- rank() over (partition by province order by people desc) rank
+-- from pcp
+-- group by province,city,people;
+
+-- 浙江,杭州,300
+-- 浙江,宁波,150
+-- 浙江,温州,200
+-- 浙江,嘉兴,100
+-- 江苏,南京,270
+-- 江苏,苏州,299
+-- 江苏,某市,200
+-- 江苏,某某市,100
+
+-- 江苏	苏州	1
+-- 江苏	南京	2
+-- 江苏	某市	3
+-- 江苏	某某市	4
+-- 浙江	杭州	1
+-- 浙江	温州	2
+-- 浙江	宁波	3
+-- 浙江	嘉兴	4
+
+组内按时间戳排序
+create table tbl_userRating_sort
+as
+select userid,itemid,sore,
+rank() over (partition by userid order by stmp desc) rank
+from tbl_userRating
+group by userid,itemid,sore,stmp;
+
+insert overwrite local directory '/home/hadoop/ly/incre_cf/data' select * from tbl_userRating_sort; 
+sed 's//|/g' 
+
+每个用户取
+
+awk -F '|' '{print $1"|"$2"|"$3}' VM_USR_attributes_m.dat > data_for_hive/VM_USR_attributes_m.txt
+
+
+
+
+
+create table predict_cm
+(
+userid string,
+itemid string,
+sore float
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' 
+LINES TERMINATED BY '\n';
+
+load data local inpath '/home/hadoop/ly/incre_cf/data/predicted_cm.txt' overwrite into table predict_cm;
+
+
+
+700users:
+create table tbl_userRating_700
+(
+userid string,
+itemid string,
+sore float,
+stmp string
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' 
+LINES TERMINATED BY '\n';
+
+load data local inpath '/home/hadoop/ly/incre_cf/data/ratings_700u.csv' overwrite into table tbl_userRating_700;
+
+create table tbl_userRating_sort_700u
+as
+select userid,itemid,sore,
+rank() over (partition by userid order by stmp desc) rank
+from tbl_userRating_700
+group by userid,itemid,sore,stmp;
+
+
+insert overwrite local directory '/home/hadoop/ly/incre_cf/data/lzb' select * from tbl_userRating_sort_700u; 
+
+create table tbl_userRating_1000
+(
+userid string,
+itemid string,
+sore float,
+stmp string
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' 
+LINES TERMINATED BY '\n';
+
+load data local inpath '/home/hadoop/ly/incre_cf/data/ratings_1000.dat' overwrite into table tbl_userRating_1000;
+
+create table tbl_userRating_sort_1000u
+as
+select userid,itemid,sore,
+rank() over (partition by userid order by stmp desc) rank
+from tbl_userRating_1000
+group by userid,itemid,sore,stmp;
+
+
+insert overwrite local directory '/home/hadoop/ly/incre_cf/data/tmp' select * from tbl_userRating_sort_1000u; 
+
+
+create table tbl_userRating_7w
+(
+userid string,
+itemid string,
+sore float,
+stmp string
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' 
+LINES TERMINATED BY '\n';
+
+load data local inpath '/home/hadoop/ly/incre_cf/data/ratings_7w.dat' overwrite into table tbl_userRating_7w;
+
+create table tbl_userRating_sort_7wu
+as
+select userid,itemid,sore,
+rank() over (partition by userid order by stmp desc) rank
+from tbl_userRating_7w
+group by userid,itemid,sore,stmp;
+
+
+insert overwrite local directory '/home/hadoop/ly/incre_cf/data/tmp' select * from tbl_userRating_sort_7wu; 
+
+
+
+
+RMSE:
+drop table predicted_700u;
+create table predicted_700u
+(
+userid string,
+itemid string,
+sore float
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' 
+LINES TERMINATED BY '\n';
+load data local inpath '/home/hadoop/ly/incre_cf/data/lzb/predicted_700u_cm.csv' overwrite into table predicted_700u;
+
+create table test_700u
+(
+userid string,
+itemid string,
+sore float
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' 
+LINES TERMINATED BY '\n';
+load data local inpath '/home/hadoop/ly/incre_cf/data/lzb/test_1000u.csv' overwrite into table test_700u;
+
+
+//计算item平均值
+create table item_mean_score
+as 
+select itemid,(sum(sore)/count(userid)) as mean_score
+from tbl_userRating_1000 group by itemid;
+
+//如果test里面有，prediction里面没有，则prediction为空
+drop table item_pre_test;
+create table item_pre_test
+as 
+select c.userid as userid,c.itemid as itemid,c.pre_score as pre_score,c.test_score as test_score
+from 
+(
+select b.userid as userid,b.itemid as itemid, a.sore as pre_score, b.sore as test_score
+from predicted_700u a 
+right outer join test_700u b 
+on a.userid=b.userid and a.itemid= b.itemid
+) c ;
+
+
+//
+drop table rmse_tmp;
+create table rmse_tmp
+as
+select a.userid,a.test_score,
+(CASE  
+   WHEN (a.pre_score is null) THEN b.mean_score
+   ELSE a.pre_score
+END)
+as pre_score
+from item_pre_test a
+join item_mean_score b
+on a.itemid = b.itemid;
+
+select sum(power((pre_score- test_score),2))/count(userid)
+from rmse_tmp;
+
+
+==========================================================================
+create table predicted_7w
+(
+userid string,
+itemid string,
+sore float
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' 
+LINES TERMINATED BY '\n';
+load data local inpath '/home/hadoop/ly/incre_cf/data/lzb/predicted_cm_7w.csv' overwrite into table predicted_7w;
+
+create table test_7w
+(
+userid string,
+itemid string,
+sore float
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' 
+LINES TERMINATED BY '\n';
+load data local inpath '/home/hadoop/ly/incre_cf/data/lzb/test_7w.csv' overwrite into table test_7w;
+
+//计算item平均值
+drop table item_mean_score_7w;
+create table item_mean_score_7w
+as 
+select c.itemid,(sum(c.sore)/count(c.userid)) as mean_score
+from tbl_userRating_7w c group by c.itemid;
+
+//如果test里面有，prediction里面没有，则prediction为空
+create table item_pre_test_7w
+as 
+select c.userid as userid,c.itemid as itemid,c.pre_score as pre_score,c.test_score as test_score
+from 
+(
+select b.userid as userid,b.itemid as itemid, a.sore as pre_score, b.sore as test_score
+from predicted_7w a 
+right outer join test_7w b 
+on a.userid=b.userid and a.itemid= b.itemid
+) c ;
+
+
+//
+drop table rmse_tmp_7w;
+create table rmse_tmp_7w
+as
+select a.userid,a.test_score,
+(CASE  
+   WHEN (a.pre_score is null) THEN b.mean_score
+   ELSE a.pre_score
+END)
+as pre_score
+from item_pre_test_7w a
+join item_mean_score_7w b
+on a.itemid = b.itemid;
+
+create table rmse_1000u
+as 
+select sum(power((pre_score- test_score),2))/count(userid)
+from rmse_tmp_7w;
+
+select count(1) from item_pre_test_7w where pre_score is null;
+
+
+
+======================================================
+create table predicted_5
+(
+userid string,
+itemid string,
+sore float
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' 
+LINES TERMINATED BY '\n';
+load data local inpath '/home/hadoop/ly/incre_cf/data/lzb/aa' overwrite into table predicted_5;
+
+create table test_5
+(
+userid string,
+itemid string,
+sore float
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' 
+LINES TERMINATED BY '\n';
+load data local inpath '/home/hadoop/ly/incre_cf/data/lzb/bb_test' overwrite into table test_5;
+
+create table item_mean_score_5
+as 
+select c.itemid,(sum(c.sore)/count(c.userid)) as mean_score
+from 
+(
+select a.userid as userid,a.itemid as itemid,a.sore as sore
+from predicted_5 a
+union all 
+select b.userid as userid,b.itemid as itemid,b.sore as sore
+from test_5 b
+)c group by c.itemid;
+
+
+create table item_pre_test_5
+as 
+select c.userid as userid,c.itemid as itemid,c.pre_score as pre_score,c.test_score as test_score
+from 
+(
+select b.userid as userid,b.itemid as itemid, a.sore as pre_score, b.sore as test_score
+from predicted_5 a 
+right outer join test_5 b 
+on a.userid=b.userid and a.itemid= b.itemid
+) c ;
+create table rmse_tmp_5
+as
+select a.userid,a.test_score,
+(CASE  
+   WHEN (a.pre_score is null) THEN b.mean_score
+   ELSE a.pre_score
+END)
+as pre_score
+from item_pre_test_5 a
+join item_mean_score_5 b
+on a.itemid = b.itemid;
+
+select sum(power((pre_score- test_score),2))/count(userid)
+from rmse_tmp_5;
+
+=========================================================================================
+10w
+create table predicted_5
+(
+userid string,
+itemid string,
+sore float
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' 
+LINES TERMINATED BY '\n';
+load data local inpath '/home/hadoop/ly/incre_cf/data/lzb/aa' overwrite into table predicted_5;
+
+create table test_5
+(
+userid string,
+itemid string,
+sore float
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' 
+LINES TERMINATED BY '\n';
+load data local inpath '/home/hadoop/ly/incre_cf/data/lzb/bb_test' overwrite into table test_5;
+
+create table train_5
+(
+userid string,
+itemid string,
+sore float
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' 
+LINES TERMINATED BY '\n';
+load data local inpath '/home/hadoop/ly/incre_cf/data/lzb/bb_test' overwrite into table test_5;
+
+create table item_mean_score_5
+as 
+select c.itemid,(sum(c.sore)/count(c.userid)) as mean_score
+from test_5 group by c.itemid;
+
+
+create table item_pre_test_5
+as 
+select c.userid as userid,c.itemid as itemid,c.pre_score as pre_score,c.test_score as test_score
+from 
+(
+select b.userid as userid,b.itemid as itemid, a.sore as pre_score, b.sore as test_score
+from predicted_5 a 
+right outer join test_5 b 
+on a.userid=b.userid and a.itemid= b.itemid
+) c ;
+create table rmse_tmp_5
+as
+select a.userid,a.test_score,
+(CASE  
+   WHEN (a.pre_score is null) THEN b.mean_score
+   ELSE a.pre_score
+END)
+as pre_score
+from item_pre_test_5 a
+join item_mean_score_5 b
+on a.itemid = b.itemid;
+
+select sum(power((pre_score- test_score),2))/count(userid)
+from rmse_tmp_5;
+=================================================================================================
+Modify
+create table predicted_5
+(
+userid string,
+itemid string,
+sore float
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' 
+LINES TERMINATED BY '\n';
+load data local inpath '/home/hadoop/ly/incre_cf/data/lzb/aa' overwrite into table predicted_5;
+
+create table test_5
+(
+userid string,
+itemid string,
+sore float
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' 
+LINES TERMINATED BY '\n';
+load data local inpath '/home/hadoop/ly/incre_cf/data/lzb/bb_test' overwrite into table test_5;
+
+create table train_5
+(
+userid string,
+itemid string,
+sore float)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' 
+LINES TERMINATED BY '\n';
+load data local inpath '/home/hadoop/ly/incre_cf/data/lzb/cc_train' overwrite into table train_5;
+
+
+create table item_mean_score_5
+as 
+select a.itemid,a.mean_score,b.user_count
+from 
+(select itemid,(sum(sore)/count(userid)) as mean_score from test_5 group by itemid) a
+left outer join (select itemid,count(userid)as user_count from train_5 group by itemid) b
+on a.itemid = b.itemid where b.user_count is null;
+
+
+create table item_mean_score_5
+as
+select c.itemid, 
+(CASE  
+   WHEN (c.user_count is null) THEN c.mean_score
+   ELSE 0
+END)
+as mean_score from 
+(select a.itemid,a.mean_score,b.user_count
+from 
+(
+select itemid,(sum(sore)/count(userid)) as mean_score from test_5 group by itemid) a
+left outer join (select itemid,count(userid)as user_count from train_5 group by itemid) b
+on a.itemid = b.itemid)c;
+
+
+create table item_pre_test_5
+as 
+select c.userid as userid,c.itemid as itemid,c.pre_score as pre_score,c.test_score as test_score
+from 
+(
+select b.userid as userid,b.itemid as itemid, a.sore as pre_score, b.sore as test_score
+from predicted_5 a 
+right outer join test_5 b 
+on a.userid=b.userid and a.itemid= b.itemid
+) c ;
+
+select count(1) from item_pre_test_5 where pre_score is not null;
+create table rmse_tmp_5
+as
+select a.userid,a.test_score,
+(CASE  
+   WHEN (a.pre_score is null) THEN b.mean_score
+   ELSE a.pre_score
+END)
+as pre_score
+from item_pre_test_5 a
+join item_mean_score_5 b
+on a.itemid = b.itemid;
+
+select sum(power((pre_score- test_score),2))/count(userid)
+from rmse_tmp_5;
+
+=============================================================================================================================
+700users
+create table predicted_5
+(
+userid string,
+itemid string,
+sore float
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' 
+LINES TERMINATED BY '\n';
+load data local inpath '/home/hadoop/ly/incre_cf/data/lzb/aa' overwrite into table predicted_5;
+
+create table test_5
+(
+userid string,
+itemid string,
+sore float
+)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' 
+LINES TERMINATED BY '\n';
+load data local inpath '/home/hadoop/ly/incre_cf/data/lzb/bb_test' overwrite into table test_5;
+
+create table train_5
+(
+userid string,
+itemid string,
+sore float)
+ROW FORMAT DELIMITED FIELDS TERMINATED BY '|' 
+LINES TERMINATED BY '\n';
+load data local inpath '/home/hadoop/ly/incre_cf/data/lzb/cc_train' overwrite into table train_5;
+
+
+create table item_mean_score_5
+as 
+select a.itemid,a.mean_score,b.user_count
+from 
+(select itemid,(sum(sore)/count(userid)) as mean_score from test_5 group by itemid) a
+left outer join (select itemid,count(userid)as user_count from train_5 group by itemid) b
+on a.itemid = b.itemid where b.user_count is null;
+
+
+create table item_mean_score_5
+as
+select c.itemid, 
+(CASE  
+   WHEN (c.user_count is null) THEN c.mean_score
+   ELSE 0
+END)
+as mean_score from 
+(select a.itemid,a.mean_score,b.user_count
+from 
+(
+select itemid,(sum(sore)/count(userid)) as mean_score from test_5 group by itemid) a
+left outer join (select itemid,count(userid)as user_count from train_5 group by itemid) b
+on a.itemid = b.itemid)c;
+
+
+create table item_pre_test_5
+as 
+select c.userid as userid,c.itemid as itemid,c.pre_score as pre_score,c.test_score as test_score
+from 
+(
+select b.userid as userid,b.itemid as itemid, a.sore as pre_score, b.sore as test_score
+from predicted_5 a 
+right outer join test_5 b 
+on a.userid=b.userid and a.itemid= b.itemid
+) c ;
+
+select count(1) from item_pre_test_5 where pre_score is not null;
+create table rmse_tmp_5
+as
+select a.userid,a.test_score,
+(CASE  
+   WHEN (a.pre_score is null) THEN b.mean_score
+   ELSE a.pre_score
+END)
+as pre_score
+from item_pre_test_5 a
+join item_mean_score_5 b
+on a.itemid = b.itemid;
+
+select sum(power((pre_score- test_score),2))/count(userid)
+from rmse_tmp_5;
+
+
+
+
