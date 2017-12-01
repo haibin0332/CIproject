@@ -1,0 +1,196 @@
+
+版本需求：Spark 1.5.0 scala 2.10 hadoop 2.6.2 JDK 1.8.0
+
+FI测试环境：20.26.24.46
+
+=======================================================
+spark shell配置参数
+spark-shell --master yarn-client --conf spark.sql.shuffle.partitions=600 --conf spark.akka.frameSize=1024 --conf spark.driver.maxResultSize=4096M --num-executors 14
+spark-shell --master yarn-client --conf spark.sql.shuffle.partitions=10000 --num-executors 24 --executor-memory 8g --executor-cores 2 --driver-memory 8g --conf spark.driver.maxResultSize=5120M --conf spark.network.timeout=500 --conf spark.akka.frameSize=2047
+spark-shell --master yarn-client --conf spark.sql.shuffle.partitions=10000 --num-executors 40 --executor-memory 4g --driver-memory 6g --conf spark.driver.maxResultSize=5120M --conf spark.akka.frameSize=6144
+=======================================================
+时间间隔：1 hour
+空间间隔：经纬度 1 km
+时间内的空间位置：取待时间最长的地点
+
+时空轨迹数据原始表：d_ens_nd_234g_lac
+时空轨迹数据汇总表：dwfu_hive_db.i_tpos_trail_d
+=======================================================
+hive创建表，远程执行
+nohup beeline -e 'create table zj_yangyiling as select msisdn as user_id,hour(start_time) 
+as yyl_hour,floor(longitude*100)*10000000+floor(latitude*100) as yyl_location
+from d_ens_nd_234g_lac where p_hour between 2016062400 and 2016062423;' > log.txt
+
+desc formatted 用户表 (查看地址)
+hadoop dfs -get 本地
+
+beeline -e "select * from table"  > 本地文件
+
+pwd
+ps aux
+nohup beeline -e 'create table zj_biao as select biao as user_id, hour(start_time) as nn_hour, floor(longitude*100)*1000000+floor(latitude) as
+nn_location from d_ens_nd_234g_lac where p_hour between 时间1 and 时间2;' > /dev/log.txt 2 >& 1 &
+=======================================================
+Hive表的hdfs存储位置：5
+hdfs://hacluster/user/hive/warehouse/
+=======================================================
+用户列表：hive表：zj_yangyiling_users，共405730个用户
+
+查看表的属性 describe zj_zhb_users
+用户的基本信息表 dwfu_hive_db.a_usoc_user_attr_d 
+create table zj_zhb_users as select bill_no from dwfu_hive_db.a_usoc_user_attr_d where p_day=20160630 and county_id='5719';
+create table zj_temp_user_info (bill_no string, birthday string) partitioned by (p_day string);
+insert into zj_temp_user_info partition(p_day=20160511) select bill_no, birthday from dwfu_hive_db.a_usoc_user_attr_d where p_day=20160511 and county_id='5719';
+
+
+下面是一个在hive上删表并建表的操作
+use dzqdcx_hive_db;
+select * from default.D_CDM_APP_NAME_CODE limit 10;
+drop table zj_temp_user_info;
+create table zj_temp_user_info (bill_no string, birthday string, student_flag smallint) partitioned by (p_day string);
+insert into zj_temp_user_app_info select bill_no, app_id, visit_cnt from dwfu_hive_db.I_UNET_GPRS_LOG_M 
+where p_mon=201605 and I_UNET_GPRS_LOG_M.bill_no in (select bill_no from dwfu_hive_db.a_usoc_user_attr_d 
+where p_day=20160511 and county_id='5719');
+
+
+将hive下自己建的表扔到hdfs上
+
+insert overwrite directory "/jc_dzqdcx/pde/all_app_user"
+row format delimited 
+fields terminated by '|'
+select * from dzqdcx_hive_db.zj_alluser_feature_temp5;
+
+insert overwrite directory "/jc_dzqdcx/app_info"
+row format delimited 
+fields terminated by '|'
+select app_name, app_classify_type, app_code from default.d_cdm_app_name_code where p_day = 20161127;
+
+
+insert overwrite directory "/jc_dzqdcx/app_info_map"
+row format delimited 
+fields terminated by '|'
+select * from dzqdcx_hive_db.temp_appcode;
+
+
+insert overwrite directory "/jc_dzqdcx/app_user_time_sparseinput"
+row format delimited 
+fields terminated by '|'
+select * from dzqdcx_hive_db.zj_users_app;
+
+
+insert overwrite directory "/jc_dzqdcx/bill_no_userid"
+row format delimited 
+fields terminated by '|'
+select * from dzqdcx_hive_db.zj_billno_userid_shouting;
+
+
+insert overwrite directory "/jc_dzqdcx/shouchong_sourcedata2"
+row format delimited 
+fields terminated by '|'
+select * from dzqdcx_hive_db.shouchong_sourcedata;
+
+
+select bill_no, birthday, student_flag from bdcqs_hive_db.tmp_wyd_inte_zf_ord_users;
+
+=======================================================
+全量用户2016.5月轨迹数据表：hive表：zj_yangyiling_totaldata
+create table zj_yangyiling_totaldata like dwfu_hive_db.i_tpos_trail_d;
+beeline -e 'insert into zj_yangyiling_totaldata partition(p_day=20160501) select bill_no,msisdn,in_time,out_time,lac_ci,longitude,latitude,stay_duration,pass_duration,pass_distance,pass_speed,roworder from dwfu_hive_db.i_tpos_trail_d where p_day=20160501 and length(bill_no)>0;'
+,out_time,lac_ci,longitude,latitude,stay_duration,pass_duration,pass_distance,pass_speed,roworder from zj_yangyiling_totaldata where (zj_yangyiling_totaldata.p_day=20160531 and zj_yangyiling_totaldata.bill_no in (select bill_no from zj_yangyiling_users));'
+=======================================================
+
+insert into zj_temp_user_netflux select bill_no, net_flux from dwfu_hive_db.a_uprd_user_busi_use_m where p_mon=201606 and county_id='5719';
+select bill_no, net_flux,p_mon from dwfu_hive_db.a_uprd_user_busi_use_m where p_mon=201607 limit 10;
+select bill_no, net_flux,p_mon from dwfu_hive_db.a_uprd_user_busi_use_m where p_mon!='201606' limit 10;
+select bill_no, net_flux from dwfu_hive_db.a_uprd_user_busi_use_m limit 10;
+
+insert into zj_temp_user_app_info_7_12 select bill_no, floor((unix_timestamp(acc_beg_date)-unix_timestamp('2016-07-01 00:00:00'))/60) as start_time, exte_field3 from default.d_enl_intn_acc_gprs where p_hour between 2016071200 and 2016071223 and d_enl_intn_acc_gprs.bill_no in (select bill_no from dwfu_hive_db.a_usoc_user_attr_d where p_day=20160712 and county_id='5719');
+
+
+=======================================================
+分类算法的执行脚本
+spark-submit --class "com.huawei.zj.Cluster" --master yarn-client --conf "spark.executor.memory=8g" --conf "spark.driver.memory=10g" --conf "spark.executor.instances=29" --conf "spark.executor.cores=1" --conf "spark.driver.maxResultSize=10240M" /app/dzqdcx/pde/target/tspattern-1.0-SNAPSHOT-jar-with-dependencies.jar 56 100 1 "hdfs://hacluster/jc_dzqdcx/griddata_60mins_7_7/part*" "hdfs://hacluster/jc_dzqdcx/kmcluster"
+=======================================================
+
+spark-submit --class "com.huawei.universe.pde.run.CmdSubmit" --master yarn-client --conf "spark.speculation=true" --conf "spark.executor.memory=4g" --conf "spark.driver.memory=8g" --conf "spark.executor.instances=30" --conf "spark.executor.cores=2" --conf "spark.driver.maxResultSize=4096M" --conf "spark.storage.memoryFraction=0.2" --conf "spark.shuffle.memoryFraction=0.6" --conf "spark.akka.frameSize=2048" /app/dzqdcx/jfz/pde-1.0-SNAPSHOT-jar-with-dependencies.jar /app/dzqdcx/jfz/pde_zj_jx_high_quality_onehot_11_04.xml
+
+=======================================================
+基于流量订购行为的（整个杭州用户）种子用户集和备选集的生产方案
+
+gprs_fee, gprs_month_fee(订购套餐的花销), gprs_comm_fee(订购套餐外的花销)
+
+生成种子用户（对于6月份的用户）：5月gprs_comm_fee大于500， 6月gprs_month_fee大于5月gprs_month_fee
+create table hz_full_candidate (bill_no string, gprs_fee bigint, gprs_month_fee bigint, gprs_comm_fee bigint, l1m_gprs_fee bigint, l2m_gprs_fee bigint);
+insert into hz_full_candidate select bill_no, gprs_fee, gprs_month_fee, gprs_comm_fee, l1m_gprs_fee, l2m_gprs_fee from dwfu_hive_db.a_upay_user_attr_m where p_mon=201606 and l1m_gprs_comm_fee>500 and city_id='571' and gprs_month_fee>l1m_gprs_month_fee;
+
+生成备选用户名单：#########(方案)
+
+select bill_no, gprs_fee, gprs_month_fee, gprs_comm_fee, l1m_gprs_fee, l2m_gprs_fee from dwfu_hive_db.a_upay_user_attr_m where p_mon=201605 and l1m_gprs_comm_fee>500 and l2m_gprs_comm_fee>500 and city_id='571' and gprs_month_fee>l1m_gprs_month_fee;
+
+select bill_no, gprs_fee, gprs_month_fee, gprs_comm_fee, l1m_gprs_fee, l2m_gprs_fee from dwfu_hive_db.a_upay_user_attr_m where p_mon=201605 and l2m_gprs_fee>0 and l1m_gprs_fee>0 and city_id='571';
+
+
+然后把种子用户和备选用户分别从栅格化的名单中拉出来
+
+(注：可能在加入其他维度的数据)
+
+select bill_no, net_flux, lm_net_flux, l2m_net_flux, tot_call_dur, lm_tot_call_dur, l2m_tot_call_dur from dwfu_hive_db.a_uprd_user_busi_use_m where city_id='571' limit 10;
+
+--master local --seedInput data/seedInput.txt --nonSeedInput data/nonSeedInput.txt --patternOutput data/patterns --recommendOutput data/recommend --groundTruthInput data/testFlux.txt --outPutWithPattern true --keepTimeInfo true --weight true
+
+--master local --countryInput data/citycode.csv --keywordInput data/keyword.csv --keyword2Input data/keyword.csv --sourcedataInput data/input.txt --singleruleIDOutput data/singletest --mapdataOutput data/datatest 
+
+
+create table zj_users_app as select bill_no, floor((unix_timestamp(acc_beg_date)-unix_timestamp('2016-11-01 00:00:00'))/3600), exte_field3 from default.d_enl_intn_acc_gprs a left outer join dzqdcx_hive_db.zj_app_user_login_larger1 b on a.bill_no=b.phn_no where b.phn_no is not null and a.p_hour between 2016111000 and 2016112023 and a.exte_field3 in (select code from dzqdcx_hive_db.temp_appcode);
+
+
+
+create table zj_users_app as select bill_no, app_id, visit_cnt from dwfu_hive_db.I_UNET_GPRS_LOG_M a left outer join dzqdcx_hive_db.zj_app_user_login_larger1 b on a.bill_no=b.phn_no where b.phn_no is not null and a.p_mon = 201610 and a.app_id in (select code from dzqdcx_hive_db.temp_appcode);
+
+
+create table shouchong_sourcedata as select * from dzqdcx_hive_db.zj_alluser_feature_temp1 where zj_alluser_feature_temp1.bill_no in (select bill_no from dzqdcx_hive_db.zj_cleaned_userid2);
+
+ 
+
+
+=======================================================
+时间间隔：30mins
+空间间隔：经纬度 500m ,longitude 0.0052, latitude 0.0045
+时间内的空间位置：取待时间最长的地点
+=======================================================
+时空轨迹数据原始表：d_ens_nd_234g_lac
+时空轨迹数据汇总表：dwfu_hive_db.i_tpos_trail_d
+=======================================================
+hive创建表，远程执行
+nohup beeline -e 'create table zj_yangyiling as select msisdn as user_id,hour(start_time) 
+as yyl_hour,floor(longitude*100)*10000000+floor(latitude*100) as yyl_location
+from d_ens_nd_234g_lac where p_hour between 2016062400 and 2016062423;' > log.txt
+=======================================================
+Spark Shell:
+spark-shell --master yarn-client --conf spark.sql.shuffle.partitions=600 --conf spark.akka.frameSize=1024 --conf spark.driver.maxResultSize=4096M  --driver-memory 4G --num-executors 45 --executor-memory 4G --executor-cores 1
+=======================================================
+Hive表的hdfs存储位置：
+hdfs://hacluster/user/hive/warehouse/
+=======================================================
+对分群后的数据计算频繁项：
+spark-submit --class "com.huawei.FPGrowthWithGroupInfo" --master yarn-client --conf "spark.executor.memory=4g" --conf "spark.driver.memory=6g" --conf "spark.executor.instances=29" --conf "spark.executor.cores=1" --conf "spark.driver.maxResultSize=10240M" /app/dzqdcx/TS-FP-Growth/target/TS-FP-1.0-SNAPSHOT-jar-with-dependencies.jar --master yarn-client --minSupport 0.05 --minConfidence 0.5 --numPartition 56 --withGroup true --input hdfs://hacluster/jc_dzqdcx/kmcluster/part* --output hdfs://hacluster/jc_dzqdcx/fp_out
+=======================================================
+提取全量用户的频繁项和关联规则
+spark-submit --class "com.huawei.FPGrowthWithGroupInfo" --master yarn-client --conf "spark.executor.memory=4g" --conf "spark.driver.memory=4g" --conf "spark.executor.instances=29" --conf "spark.executor.cores=1" --conf "spark.driver.maxResultSize=10240M" /app/dzqdcx/TS-FP-Growth/target/TS-FP-1.0-SNAPSHOT-jar-with-dependencies.jar --master yarn-client --sample 0.3 --minSupport 0.05 --minConfidence 0.6 --numPartition 56 --withGroup false --input hdfs://hacluster/jc_dzqdcx/tsdata_60mins_7_12/part* --output hdfs://hacluster/jc_dzqdcx/fp_sample_total_out
+=======================================================
+关联推荐脚本：
+spark-submit --class "com.huawei.FPGrowthBasedRecommend" --master yarn-client --conf "spark.executor.memory=8g" --conf "spark.driver.memory=10g" --conf "spark.executor.instances=29" --conf "spark.executor.cores=1" --conf "spark.driver.maxResultSize=10240M" /app/dzqdcx/FP-Growth/target/ar-1.0-SNAPSHOT-jar-with-dependencies.jar --master yarn-client --minSupport 0.005 --minConfidence 0.6 --k 5 --debug true --includeExisting true --numPartition 28 --input hdfs://hacluster/jc_dzqdcx/tsdata_noid/part* --output hdfs://hacluster/jc_dzqdcx/tsdata_out
+=======================================================
+月上网表：dwfu_hive_db.i_unet_gprs_log_m
+APP编号伪表：default.d_cdm_app_name_code
+=======================================================
+拉取7月12,13,14日的数据：
+use dzqdcx_hive_db;
+create table zj_user_location_7_12 (bill_no string,start_time bigint,end_time bigint,longitude string,latitude string);
+insert into zj_user_location_7_12 select bill_no, floor((unix_timestamp(in_time)-unix_timestamp('2016-07-01 00:00:00'))/60) as start_time, floor((unix_timestamp(out_time)-unix_timestamp('2016-07-01 00:00:00'))/60) as end_time, longitude, latitude from dwfu_hive_db.i_tpos_trail_d where i_tpos_trail_d.p_day=20160712 and length(i_tpos_trail_d.bill_no)>0 and i_tpos_trail_d.bill_no in (select bill_no from dwfu_hive_db.a_usoc_user_attr_d where p_day=20160712 and county_id='5719');
+create table zj_user_location_7_13 (bill_no string,start_time bigint,end_time bigint,longitude string,latitude string);
+insert into zj_user_location_7_13 select bill_no, floor((unix_timestamp(in_time)-unix_timestamp('2016-07-01 00:00:00'))/60) as start_time, floor((unix_timestamp(out_time)-unix_timestamp('2016-07-01 00:00:00'))/60) as end_time, longitude, latitude from dwfu_hive_db.i_tpos_trail_d where i_tpos_trail_d.p_day=20160713 and length(i_tpos_trail_d.bill_no)>0 and i_tpos_trail_d.bill_no in (select bill_no from dwfu_hive_db.a_usoc_user_attr_d where p_day=20160713 and county_id='5719');
+create table zj_user_location_7_14 (bill_no string,start_time bigint,end_time bigint,longitude string,latitude string);
+insert into zj_user_location_7_14 select bill_no, floor((unix_timestamp(in_time)-unix_timestamp('2016-07-01 00:00:00'))/60) as start_time, floor((unix_timestamp(out_time)-unix_timestamp('2016-07-01 00:00:00'))/60) as end_time, longitude, latitude from dwfu_hive_db.i_tpos_trail_d where i_tpos_trail_d.p_day=20160714 and length(i_tpos_trail_d.bill_no)>0 and i_tpos_trail_d.bill_no in (select bill_no from dwfu_hive_db.a_usoc_user_attr_d where p_day=20160714 and county_id='5719');
+=======================================================
+tsdata，按时间排序，将fpgrowth替换为prefixscan
