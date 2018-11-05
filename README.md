@@ -16,3 +16,7 @@ http://www.cnblogs.com/linn/archive/2007/03/05/664739.html
 
 anaconda install
 http://www.jianshu.com/p/2f3be7781451
+
+
+tf tutorial
+https://gitbook.cn/books/5a598c061025f97e79b85005/index.html
